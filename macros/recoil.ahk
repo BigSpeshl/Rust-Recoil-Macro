@@ -93,10 +93,10 @@ Gui, Add, Button, x240 y464 w100 gResetAll, Reset
 Gui, Add, Button, x350 y464 w90 gExitApp, Exit
 
 ; Status bar
-Gui, Add, Text, x10 y512 w440 h28 vStatusText c0xA7FFB2, Status: OFF    Hotkey: F8
+Gui, Add, Text, x10 y512 w440 h28 vStatusText c0xA7FFB2, Status: OFF    Hotkey: F6
 
 ; Tooltips and initial control values
-ToolTip, Hotkey F8 toggles macro. Hold LMB to apply recoil compensation., 5, 580
+ToolTip, Hotkey F6 toggles macro. Hold LMB to apply recoil compensation., 5, 580
 
 Gui, Show, w460 h560, Recoil macros — GUI
 return
@@ -128,7 +128,7 @@ WeaponSelect:
     ; If button variable like Btn1 etc, get its text
     ControlGetText, text, %weaponName%, A
     CurrentWeapon := text
-    GuiControl,, StatusText, %"Selected: " . CurrentWeapon . " | Status: " . (Enabled?"ON":"OFF")
+    GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF")
 return
 
 SaveProfile:
@@ -177,7 +177,7 @@ LoadProfile:
             }
         }
     }
-    GuiControl,, StatusText, %"Loaded: " . file
+    GuiControl,, StatusText, % "Loaded: " . file
 return
 
 ResetAll:
@@ -196,9 +196,9 @@ ExitApp:
 return
 
 ; --- Hotkeys and main loop ---
-F8::
+F6::
     Enabled := !Enabled
-    GuiControl,, StatusText, %"Status: " . (Enabled?"ON":"OFF") . " | Weapon: " . CurrentWeapon
+    GuiControl,, StatusText, % "Status: " . (Enabled ? "ON" : "OFF") . " | Weapon: " . CurrentWeapon
 return
 
 ~LButton::
