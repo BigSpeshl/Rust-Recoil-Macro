@@ -14,6 +14,7 @@ global CurrentWeapon := "LR-300"
 global Sens := 1.00 ; множитель чувствительности (GUI отображает 1.00..)
 global FOV := 90
 global ScopeMod := "None"
+global GuiLocked := false
 
 ; Структура паттерна: каждый weapon — объект {interval:, pattern: [], mode: "pair"|"vertical"}
 weapons := {}
@@ -94,8 +95,9 @@ Gui, Add, Button, x620 y636 w110 gLoadProfile, Load profile
 Gui, Add, Button, x20 y676 w120 gResetAll, Reset
 Gui, Add, Button, x160 y676 w120 gExitApp, Exit
 ; ON/OFF toggle button
-Gui, Add, Button, x300 y676 w160 h36 vEnableBtn gToggleEnable, Enable (F6)
-Gui, Add, Text, x480 y676 w260 c0xFFFFFF, Quick select: press ~1-~9 to pick weapon (does not block keys)
+Gui, Add, Button, x220 y676 w120 h36 vLockGuiBtn gToggleGUILock, Lock GUI
+Gui, Add, Button, x360 y676 w160 h36 vEnableBtn gToggleEnable, Enable (F6)
+Gui, Add, Text, x540 y676 w220 c0xFFFFFF, Quick select: press ~1-~9 to pick weapon (does not block keys)
 
 
 ; Status bar
@@ -104,7 +106,7 @@ Gui, Add, Text, x10 y760 w740 h28 vStatusText c0xFFFFFF, Selected: | Status: OFF
 ; Tooltips and initial control values
 ToolTip, Hotkey F6 toggles macro. Hold LMB to apply recoil compensation., 10, 780
 
-Gui, Show, w780 h760, Recoil macros — GUI
+Gui, Show, w780 h760 NA, Recoil macros — GUI
 return
 
 ; --- GUI callbacks ---
@@ -358,7 +360,37 @@ return
 ToggleEnable:
     Enabled := !Enabled
     GuiControl,, EnableBtn, % (Enabled ? "Disable" : "Enable") . " (F6)"
-    GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF")
+    GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF") . (GuiLocked?" | GUI: LOCKED":"")
+return
+
+ToggleGUILock:
+    ; Toggle click-through (when locked GUI will not receive input and keys go to game)
+    Gui, +LastFound
+    hwnd := WinExist()
+    if (!GuiLocked) {
+        ; add WS_EX_TRANSPARENT so clicks pass through
+        if (A_PtrSize = 8) {
+            ex := DllCall("GetWindowLongPtr", "Ptr", hwnd, "Int", -20, "Ptr")
+            DllCall("SetWindowLongPtr", "Ptr", hwnd, "Int", -20, "Ptr", ex | 0x20)
+        } else {
+            ex := DllCall("GetWindowLong", "Ptr", hwnd, "Int", -20, "Int")
+            DllCall("SetWindowLong", "Ptr", hwnd, "Int", -20, "Int", ex | 0x20)
+        }
+        GuiLocked := true
+        GuiControl,, LockGuiBtn, Unlock GUI
+        GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF") . " | GUI: LOCKED"
+    } else {
+        if (A_PtrSize = 8) {
+            ex := DllCall("GetWindowLongPtr", "Ptr", hwnd, "Int", -20, "Ptr")
+            DllCall("SetWindowLongPtr", "Ptr", hwnd, "Int", -20, "Ptr", ex & ~0x20)
+        } else {
+            ex := DllCall("GetWindowLong", "Ptr", hwnd, "Int", -20, "Int")
+            DllCall("SetWindowLong", "Ptr", hwnd, "Int", -20, "Int", ex & ~0x20)
+        }
+        GuiLocked := false
+        GuiControl,, LockGuiBtn, Lock GUI
+        GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF")
+    }
 return
 
 ; End of script
