@@ -15,6 +15,11 @@ global Sens := 1.00 ; множитель чувствительности (GUI �
 global FOV := 90
 global ScopeMod := "None"
 global GuiLocked := false
+global LearnMode := false
+global AutoLearnSamples := []
+global LearnWindow := 18
+global SelectedWeaponBtn := ""
+global HoverWeaponBtn := ""
 
 ; Структура паттерна: каждый weapon — объект {interval:, pattern: [], mode: "pair"|"vertical"}
 weapons := {}
@@ -48,34 +53,35 @@ scopemods["Silencer"] := 0.9
 
 ; GUI - styled
 Gui +Resize
-Gui, Color, 0x11151A ; dark background
+Gui, Color, 0x0E1420 ; deep dark navy
 Gui, Font, s10, Segoe UI
 
-; Header
-Gui, Font, s14 Bold, Segoe UI
-Gui, Add, Text, x10 y8 w440 h28 c0xFFFFFF Center, Recoil macros — Controls
-Gui, Font, s10, Segoe UI
+; Header / title band
+Gui, Font, s18 Bold, Segoe UI
+Gui, Add, Text, x12 y10 w876 h34 c0xE8F3FF BackgroundTrans, RECOIL CONTROL PANEL
+Gui, Font, s9, Segoe UI
+Gui, Add, Text, x660 y20 w200 h20 c0x8AB3D9 BackgroundTrans, live tuning // adaptive mode
+Gui, Add, Text, x12 y44 w876 h2 c0x2D5D7B
 
 ; Sensitivity block
-Gui, Add, GroupBox, x10 y44 w860 h130, Aim settings
-Gui, Add, Text, x20 y64 c0xFFFFFF, Sensitivity
-Gui, Add, Slider, x180 y68 vSensSlider Range20-200 w540 gOnSensChange,100
-Gui, Add, Text, x740 y64 vSensText c0xFFFFFF w90, 1.00
-Gui, Add, Text, x20 y104 c0xFFFFFF, FOV
-Gui, Add, Edit, x180 y102 vFOVEdit w120 gOnFOVChange, %FOV%
-Gui, Add, Text, x320 y104 w520 c0xFFFFFF, (Field of view — affects aim scaling)
+Gui, Add, GroupBox, x10 y60 w860 h130 c0x9BC7FF, AIM TUNING
+Gui, Add, Text, x28 y92 c0xF2F8FF, sensitivity
+Gui, Add, Slider, x180 y92 vSensSlider Range20-200 w540 gOnSensChange,100
+Gui, Add, Text, x740 y92 vSensText c0xF5FAFF w90, 1.00
+Gui, Add, Text, x28 y124 c0xF2F8FF, FOV
+Gui, Add, Edit, x180 y122 vFOVEdit w120 gOnFOVChange, %FOV%
+Gui, Add, Text, x320 y124 w520 c0xC7D8EA, field of view // affects aim scaling / recovery curve
 
 ; Weapons block
-Gui, Add, GroupBox, x10 y194 w860 h500, Weapons
+Gui, Add, GroupBox, x10 y210 w860 h500 c0x9BC7FF, WEAPON PROFILes
 ; create three-column grid of buttons with improved spacing and color hint
 weapList := ["AK","LR-300","Assault Rifle","M39","L96","Bolt Action Rifle","Semi-Automatic Rifle","MP5A4","Thompson","Custom SMG","Pump shotgun","Double Barrel Shotgun","Waterpipe Shotgun","Spas-12","Semi-Automatic Pistol","Revolver","Python","M249"]
 row := 0
 col := 0
 for index, name in weapList {
     xPos := 20 + (col * 280)
-    yPos := 224 + (row * 40)
-    ; styled button: use larger size and bold label for readability
-    Gui, Add, Button, x%xPos% y%yPos% w260 h36 gWeaponSelect vBtn%index% +Center, %name%
+    yPos := 240 + (row * 40)
+    Gui, Add, Button, x%xPos% y%yPos% w260 h36 gWeaponSelect vBtn%index% +Center +Border, %name%
     col += 1
     if (col >= 3) {
         col := 0
@@ -83,39 +89,58 @@ for index, name in weapList {
     }
 }
 
-; Scope modifiers and profile controls
-Gui, Add, GroupBox, x10 y720 w880 h160, Extras
-Gui, Add, Text, x20 y640 c0xFFFFFF, Scope modifier
-Gui, Add, DropDownList, x200 y740 vScopeDD gOnScopeChange w180, None||8x|Holo|Hand|Silencer
-Gui, Add, Button, x420 y740 w50 h30 gPrevWeapon, <
-Gui, Add, Button, x480 y740 w50 h30 gNextWeapon, >
-Gui, Add, Button, x540 y740 w40 h30 gToggleScopeTooltip, ?
-Gui, Add, Button, x600 y740 w120 gSaveProfile, Save profile
-Gui, Add, Button, x740 y740 w120 gLoadProfile, Load profile
-Gui, Add, Button, x20 y792 w140 gResetAll, Reset
-Gui, Add, Button, x180 y792 w140 gExitApp, Exit
-; ON/OFF toggle button
-Gui, Add, Button, x340 y792 w220 h44 vLockGuiBtn gToggleGUILock, Lock GUI (click-through)
-Gui, Add, Button, x580 y792 w180 h44 vEnableBtn gToggleEnable, Enable (F6)
-Gui, Add, Text, x780 y792 w120 c0xFFFFFF, Quick select: ~1-~9
+; Style selected/default states for weapon buttons after creation
+UpdateWeaponButtonStyles()
 
+
+; Scope modifiers and profile controls
+Gui, Add, GroupBox, x10 y734 w880 h170 c0x9BC7FF, EXTRAS
+Gui, Add, Text, x20 y760 c0xF2F8FF, scope modifier
+Gui, Add, DropDownList, x200 y756 vScopeDD gOnScopeChange w180, None||8x|Holo|Hand|Silencer
+Gui, Add, Button, x420 y756 w50 h30 gPrevWeapon, <
+Gui, Add, Button, x480 y756 w50 h30 gNextWeapon, >
+Gui, Add, Button, x540 y756 w40 h30 gToggleScopeTooltip, ?
+Gui, Add, Button, x600 y756 w120 gSaveProfile, save profile
+Gui, Add, Button, x740 y756 w120 gLoadProfile, load profile
+Gui, Add, Button, x20 y812 w140 gResetAll, reset
+Gui, Add, Button, x180 y812 w140 gExitApp, exit
+Gui, Add, Button, x340 y812 w220 h44 vLockGuiBtn gToggleGUILock, lock gui
+Gui, Add, Button, x580 y812 w180 h44 vEnableBtn gToggleEnable, enable (F6)
+Gui, Add, Button, x780 y812 w80 h44 vLearnBtn gToggleLearnMode, learn
+Gui, Add, Text, x780 y860 w120 c0xD7E7F8, quick select // ~1-~9
 
 ; Status bar
-Gui, Add, Text, x10 y880 w860 h28 vStatusText c0xFFFFFF, Selected: | Status: OFF    Hotkey: F6
+Gui, Add, Text, x10 y908 w860 h28 c0xF3F9FF vStatusText, Selected: | Status: OFF    Hotkey: F6
 
 ; Tooltips and initial control values
-ToolTip, Hotkey F6 toggles macro. Hold LMB to apply recoil compensation., 10, 920
+ToolTip, Hotkey F6 toggles macro. Hold LMB to apply recoil compensation., 10, 940
 
-Gui, Show, w900 h920 NA, Recoil macros — GUI
+Gui, Show, w900 h950 NA, Recoil control panel
 return
-
+;
 ; --- GUI callbacks ---
+UpdateWeaponButtonStyles() {
+    global SelectedWeaponBtn, CurrentWeapon, weapList
+    for index, name in weapList {
+        control := "Btn" . index
+        if (name = CurrentWeapon) {
+            ; selected state: cyan glow
+            GuiControl, +Background0x2C86C7, %control%
+            GuiControl, +c0xF3FAFF, %control%
+            SelectedWeaponBtn := control
+        } else {
+            ; default state: dark muted background
+            GuiControl, +Background0x1A2433, %control%
+            GuiControl, +c0xE8F3FF, %control%
+        }
+    }
+}
+
 OnSensChange:
     GuiControlGet, SensSlider
     Sens := SensSlider / 100.0
     GuiControl,, SensText, % Round(Sens, 2)
 return
-
 OnFOVChange:
     GuiControlGet, FOVEdit
     FOV := FOVEdit
@@ -136,14 +161,10 @@ return
 
 WeaponSelect:
     Gui, Submit, NoHide
-    ; Identify which button triggered
-    GuiControlGet, _G_Control, Focus
-    ; Focus returns control name; extract index
-    ; Instead, use A_GuiControl to get label
     weaponName := A_GuiControl
-    ; If button variable like Btn1 etc, get its text
     ControlGetText, text, %weaponName%, A
     CurrentWeapon := text
+    UpdateWeaponButtonStyles()
     GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF")
 return
 
@@ -214,6 +235,7 @@ LoadProfile:
             weapons[wname] := {interval: interval, pattern: pat, mode: mode}
         }
     }
+    UpdateWeaponButtonStyles()
     GuiControl,, StatusText, % "Loaded: " . file
 return
 
@@ -240,6 +262,30 @@ return
 ~LButton::
     if (!Enabled)
         return
+    ; learn mode: record recoil drift while firing
+    if (LearnMode) {
+        static lastMouseX := 0, lastMouseY := 0
+        ; Use raw OS cursor position instead of game cursor visibility.
+        VarSetCapacity(pt, 8, 0)
+        DllCall("GetCursorPos", "Ptr", &pt)
+        mx := NumGet(pt, 0, "Int")
+        my := NumGet(pt, 4, "Int")
+        if (lastMouseX = 0 && lastMouseY = 0) {
+            lastMouseX := mx
+            lastMouseY := my
+            return
+        }
+        dx := mx - lastMouseX
+        dy := my - lastMouseY
+        lastMouseX := mx
+        lastMouseY := my
+        if (Abs(dx) > 0 || Abs(dy) > 0) {
+            AutoLearnSamples.Push({x:dx, y:dy})
+            if (AutoLearnSamples.Length() > LearnWindow)
+                AutoLearnSamples.RemoveAt(1)
+        }
+        return
+    }
     ; Only compensate while held
     SetMouseDelay, -1
     ; get pattern object for current weapon
@@ -322,13 +368,13 @@ SelectWeaponByIndex(i){
     global weapList, CurrentWeapon
     if (i >=1 && i <= weapList.Length()) {
         CurrentWeapon := weapList[i]
+        UpdateWeaponButtonStyles()
         GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF")
     }
 }
 
 PrevWeapon:
     global weapList, CurrentWeapon
-    ; find current index
     idx := 0
     for k, v in weapList
         if (v = CurrentWeapon)
@@ -339,6 +385,7 @@ PrevWeapon:
     if (idx < 1)
         idx := weapList.Length()
     CurrentWeapon := weapList[idx]
+    UpdateWeaponButtonStyles()
     GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF")
 return
 
@@ -354,6 +401,7 @@ NextWeapon:
     if (idx > weapList.Length())
         idx := 1
     CurrentWeapon := weapList[idx]
+    UpdateWeaponButtonStyles()
     GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF")
 return
 
@@ -368,7 +416,6 @@ ToggleGUILock:
     Gui, +LastFound
     hwnd := WinExist()
     if (!GuiLocked) {
-        ; add WS_EX_TRANSPARENT so clicks pass through
         if (A_PtrSize = 8) {
             ex := DllCall("GetWindowLongPtr", "Ptr", hwnd, "Int", -20, "Ptr")
             DllCall("SetWindowLongPtr", "Ptr", hwnd, "Int", -20, "Ptr", ex | 0x20)
@@ -392,5 +439,53 @@ ToggleGUILock:
         GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF")
     }
 return
+
+ToggleLearnMode:
+    LearnMode := !LearnMode
+    GuiControl,, LearnBtn, % (LearnMode ? "Stop Learn" : "Learn")
+    if (LearnMode) {
+        AutoLearnSamples := []
+        GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF") . " | LEARN"
+    } else {
+        AutoLearnFromSamples()
+        GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF")
+    }
+return
+
+AutoLearnFromSamples() {
+    global AutoLearnSamples, CurrentWeapon, weapons, LearnWindow
+    if (AutoLearnSamples.Length() < 4)
+        return
+    ; average the recoil drift (dy) over the last samples
+    sumY := 0
+    sumX := 0
+    for i, v in AutoLearnSamples {
+        sumY += v.y
+        sumX += v.x
+    }
+    avgY := sumY / AutoLearnSamples.Length()
+    avgX := sumX / AutoLearnSamples.Length()
+    ; generate compensation pattern from the average direction
+    stepPattern := []
+    n := Max(4, Min(12, AutoLearnSamples.Length()))
+    for i := 1 to n {
+        stepPattern.Push( Round( -avgX / n * (i/2 + 1) ) )
+    }
+    ; adjust weapon profile object in-place
+    if (!weapons.HasKey(CurrentWeapon))
+        weapons[CurrentWeapon] := {interval:35, pattern:[0], mode:"vertical"}
+    weapons[CurrentWeapon].interval := Max(15, Min(80, 35))
+    weapons[CurrentWeapon].mode := "vertical"
+    weapons[CurrentWeapon].pattern := []
+    for i, val in stepPattern {
+        weapons[CurrentWeapon].pattern.Push( Round(-avgY / Max(1, n)) )
+    }
+    ; keep safe range
+    for i, val in weapons[CurrentWeapon].pattern {
+        if (Abs(val) < 1)
+            weapons[CurrentWeapon].pattern[i] := (val < 0 ? -1 : 1)
+    }
+    MsgBox, 64, Learning complete, Learned recoil compensation for %CurrentWeapon%.
+}
 
 ; End of script
