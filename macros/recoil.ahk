@@ -57,12 +57,12 @@ Gui, Font, s10, Segoe UI
 
 ; Sensitivity block
 Gui, Add, GroupBox, x10 y44 w760 h110, Aim settings
-Gui, Add, Text, x20 y64, Sensitivity
+Gui, Add, Text, x20 y64 c0xFFFFFF, Sensitivity
 Gui, Add, Slider, x160 y66 vSensSlider Range20-200 w420 gOnSensChange,100
-Gui, Add, Text, x600 y64 vSensText c0xCFE8FF w80, 1.00
-Gui, Add, Text, x20 y96, FOV
+Gui, Add, Text, x600 y64 vSensText c0xFFFFFF w80, 1.00
+Gui, Add, Text, x20 y96 c0xFFFFFF, FOV
 Gui, Add, Edit, x160 y94 vFOVEdit w100 gOnFOVChange, %FOV%
-Gui, Add, Text, x280 y96 w480 c0x9FB8C8, (Field of view — affects aim scaling)
+Gui, Add, Text, x280 y96 w480 c0xFFFFFF, (Field of view — affects aim scaling)
 
 ; Weapons block
 Gui, Add, GroupBox, x10 y164 w760 h440, Weapons
@@ -84,7 +84,7 @@ for index, name in weapList {
 
 ; Scope modifiers and profile controls
 Gui, Add, GroupBox, x10 y620 w760 h120, Extras
-Gui, Add, Text, x20 y640, Scope modifier
+Gui, Add, Text, x20 y640 c0xFFFFFF, Scope modifier
 Gui, Add, DropDownList, x160 y636 vScopeDD gOnScopeChange w150, None||8x|Holo|Hand|Silencer
 Gui, Add, Button, x340 y636 w40 h26 gPrevWeapon, <
 Gui, Add, Button, x390 y636 w40 h26 gNextWeapon, >
@@ -95,11 +95,11 @@ Gui, Add, Button, x20 y676 w120 gResetAll, Reset
 Gui, Add, Button, x160 y676 w120 gExitApp, Exit
 ; ON/OFF toggle button
 Gui, Add, Button, x300 y676 w160 h36 vEnableBtn gToggleEnable, Enable (F6)
-Gui, Add, Text, x480 y676 w260 c0xBEE8C8, Quick select: press 1-9 to pick weapon
+Gui, Add, Text, x480 y676 w260 c0xFFFFFF, Quick select: press ~1-~9 to pick weapon (does not block keys)
 
 
 ; Status bar
-Gui, Add, Text, x10 y760 w740 h28 vStatusText c0xA7FFB2, Selected: | Status: OFF    Hotkey: F6
+Gui, Add, Text, x10 y760 w740 h28 vStatusText c0xFFFFFF, Selected: | Status: OFF    Hotkey: F6
 
 ; Tooltips and initial control values
 ToolTip, Hotkey F6 toggles macro. Hold LMB to apply recoil compensation., 10, 780
@@ -287,32 +287,32 @@ return
 return
 
 
-; Quick-select hotkeys (1..9) map to first weapons in weapList
-1::
+; Quick-select hotkeys (1..9) map to first weapons in weapList - non-blocking (~)
+~1::
     SelectWeaponByIndex(1)
 return
-2::
+~2::
     SelectWeaponByIndex(2)
 return
-3::
+~3::
     SelectWeaponByIndex(3)
 return
-4::
+~4::
     SelectWeaponByIndex(4)
 return
-5::
+~5::
     SelectWeaponByIndex(5)
 return
-6::
+~6::
     SelectWeaponByIndex(6)
 return
-7::
+~7::
     SelectWeaponByIndex(7)
 return
-8::
+~8::
     SelectWeaponByIndex(8)
 return
-9::
+~9::
     SelectWeaponByIndex(9)
 return
 
