@@ -57,25 +57,25 @@ Gui, Add, Text, x10 y8 w440 h28 c0xFFFFFF Center, Recoil macros — Controls
 Gui, Font, s10, Segoe UI
 
 ; Sensitivity block
-Gui, Add, GroupBox, x10 y44 w760 h110, Aim settings
+Gui, Add, GroupBox, x10 y44 w860 h130, Aim settings
 Gui, Add, Text, x20 y64 c0xFFFFFF, Sensitivity
-Gui, Add, Slider, x160 y66 vSensSlider Range20-200 w420 gOnSensChange,100
-Gui, Add, Text, x600 y64 vSensText c0xFFFFFF w80, 1.00
-Gui, Add, Text, x20 y96 c0xFFFFFF, FOV
-Gui, Add, Edit, x160 y94 vFOVEdit w100 gOnFOVChange, %FOV%
-Gui, Add, Text, x280 y96 w480 c0xFFFFFF, (Field of view — affects aim scaling)
+Gui, Add, Slider, x180 y68 vSensSlider Range20-200 w540 gOnSensChange,100
+Gui, Add, Text, x740 y64 vSensText c0xFFFFFF w90, 1.00
+Gui, Add, Text, x20 y104 c0xFFFFFF, FOV
+Gui, Add, Edit, x180 y102 vFOVEdit w120 gOnFOVChange, %FOV%
+Gui, Add, Text, x320 y104 w520 c0xFFFFFF, (Field of view — affects aim scaling)
 
 ; Weapons block
-Gui, Add, GroupBox, x10 y164 w760 h440, Weapons
+Gui, Add, GroupBox, x10 y194 w860 h500, Weapons
 ; create three-column grid of buttons with improved spacing and color hint
 weapList := ["AK","LR-300","Assault Rifle","M39","L96","Bolt Action Rifle","Semi-Automatic Rifle","MP5A4","Thompson","Custom SMG","Pump shotgun","Double Barrel Shotgun","Waterpipe Shotgun","Spas-12","Semi-Automatic Pistol","Revolver","Python","M249"]
 row := 0
 col := 0
 for index, name in weapList {
-    xPos := 20 + (col * 250)
-    yPos := 194 + (row * 36)
+    xPos := 20 + (col * 280)
+    yPos := 224 + (row * 40)
     ; styled button: use larger size and bold label for readability
-    Gui, Add, Button, x%xPos% y%yPos% w230 h32 gWeaponSelect vBtn%index% +Center, %name%
+    Gui, Add, Button, x%xPos% y%yPos% w260 h36 gWeaponSelect vBtn%index% +Center, %name%
     col += 1
     if (col >= 3) {
         col := 0
@@ -84,29 +84,29 @@ for index, name in weapList {
 }
 
 ; Scope modifiers and profile controls
-Gui, Add, GroupBox, x10 y620 w760 h120, Extras
+Gui, Add, GroupBox, x10 y720 w880 h160, Extras
 Gui, Add, Text, x20 y640 c0xFFFFFF, Scope modifier
-Gui, Add, DropDownList, x160 y636 vScopeDD gOnScopeChange w150, None||8x|Holo|Hand|Silencer
-Gui, Add, Button, x340 y636 w40 h26 gPrevWeapon, <
-Gui, Add, Button, x390 y636 w40 h26 gNextWeapon, >
-Gui, Add, Button, x440 y636 w30 h26 gToggleScopeTooltip, ?
-Gui, Add, Button, x500 y636 w110 gSaveProfile, Save profile
-Gui, Add, Button, x620 y636 w110 gLoadProfile, Load profile
-Gui, Add, Button, x20 y676 w120 gResetAll, Reset
-Gui, Add, Button, x160 y676 w120 gExitApp, Exit
+Gui, Add, DropDownList, x200 y740 vScopeDD gOnScopeChange w180, None||8x|Holo|Hand|Silencer
+Gui, Add, Button, x420 y740 w50 h30 gPrevWeapon, <
+Gui, Add, Button, x480 y740 w50 h30 gNextWeapon, >
+Gui, Add, Button, x540 y740 w40 h30 gToggleScopeTooltip, ?
+Gui, Add, Button, x600 y740 w120 gSaveProfile, Save profile
+Gui, Add, Button, x740 y740 w120 gLoadProfile, Load profile
+Gui, Add, Button, x20 y792 w140 gResetAll, Reset
+Gui, Add, Button, x180 y792 w140 gExitApp, Exit
 ; ON/OFF toggle button
-Gui, Add, Button, x220 y676 w120 h36 vLockGuiBtn gToggleGUILock, Lock GUI
-Gui, Add, Button, x360 y676 w160 h36 vEnableBtn gToggleEnable, Enable (F6)
-Gui, Add, Text, x540 y676 w220 c0xFFFFFF, Quick select: press ~1-~9 to pick weapon (does not block keys)
+Gui, Add, Button, x340 y792 w220 h44 vLockGuiBtn gToggleGUILock, Lock GUI (click-through)
+Gui, Add, Button, x580 y792 w180 h44 vEnableBtn gToggleEnable, Enable (F6)
+Gui, Add, Text, x780 y792 w120 c0xFFFFFF, Quick select: ~1-~9
 
 
 ; Status bar
-Gui, Add, Text, x10 y760 w740 h28 vStatusText c0xFFFFFF, Selected: | Status: OFF    Hotkey: F6
+Gui, Add, Text, x10 y880 w860 h28 vStatusText c0xFFFFFF, Selected: | Status: OFF    Hotkey: F6
 
 ; Tooltips and initial control values
-ToolTip, Hotkey F6 toggles macro. Hold LMB to apply recoil compensation., 10, 780
+ToolTip, Hotkey F6 toggles macro. Hold LMB to apply recoil compensation., 10, 920
 
-Gui, Show, w780 h760 NA, Recoil macros — GUI
+Gui, Show, w900 h920 NA, Recoil macros — GUI
 return
 
 ; --- GUI callbacks ---
