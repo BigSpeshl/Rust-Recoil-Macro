@@ -15,27 +15,27 @@ global Sens := 1.00 ; множитель чувствительности (GUI �
 global FOV := 90
 global ScopeMod := "None"
 
-; Структура паттерна: [interval_ms, offset1, offset2, ...]
+; Структура паттерна: каждый weapon — объект {interval:, pattern: [], mode: "pair"|"vertical"}
 weapons := {}
-; AK реальный паттерн:
-weapons["AK"] := [40, -8, -9, -10, -9, -8, -7, -6, -5, -5, -4, -3, -3, -2, -2]
-weapons["LR-300"] := [40, -3, -3, -4, -5, -6, -6, -5, -4, -3, -2]
-weapons["Assault Rifle"] := [40, -3, -3, -4, -5, -6, -6, -5, -4, -3]
-weapons["M39"] := [45, -2, -2, -3, -3, -4, -4, -3, -2]
-weapons["L96"] := [60, -6, -5, -5, -6]
-weapons["Bolt Action Rifle"] := [60, -6, -6, -7]
-weapons["Semi-Automatic Rifle"] := [50, -4, -4, -5, -5]
-weapons["MP5A4"] := [30, -2, -3, -3, -4, -3, -2]
-weapons["Thompson"] := [35, -3, -3, -4, -4, -3]
-weapons["Custom SMG"] := [30, -2, -3, -3, -4]
-weapons["Pump shotgun"] := [80, -8, -7, -9]
-weapons["Double Barrel Shotgun"] := [90, -12, -10]
-weapons["Waterpipe Shotgun"] := [85, -10, -9]
-weapons["Spas-12"] := [75, -9, -9]
-weapons["Semi-Automatic Pistol"] := [70, -6, -5]
-weapons["Revolver"] := [70, -7, -6]
-weapons["Python"] := [70, -8, -7]
-weapons["M249"] := [28, -2, -3, -4, -5, -6, -6, -5, -4, -3]
+; AK — 2D S-shaped паттерн (dx,dy pairs)
+weapons["AK"] := {interval:40, pattern:[ -2, -8, -1, -7, 0, -6, 1, -5, 2, -4, 2, -3, 1, -2, 0, -1 ], mode:"pair"}
+weapons["LR-300"] := {interval:40, pattern:[ -3, -3, -4, -5, -6, -6, -5, -4, -3, -2 ], mode:"vertical"}
+weapons["Assault Rifle"] := {interval:40, pattern:[ -3, -3, -4, -5, -6, -6, -5, -4, -3 ], mode:"vertical"}
+weapons["M39"] := {interval:45, pattern:[ -2, -2, -3, -3, -4, -4, -3, -2 ], mode:"vertical"}
+weapons["L96"] := {interval:60, pattern:[ -6, -5, -5, -6 ], mode:"vertical"}
+weapons["Bolt Action Rifle"] := {interval:60, pattern:[ -6, -6, -7 ], mode:"vertical"}
+weapons["Semi-Automatic Rifle"] := {interval:50, pattern:[ -4, -4, -5, -5 ], mode:"vertical"}
+weapons["MP5A4"] := {interval:30, pattern:[ -2, -3, -3, -4, -3, -2 ], mode:"vertical"}
+weapons["Thompson"] := {interval:35, pattern:[ -3, -3, -4, -4, -3 ], mode:"vertical"}
+weapons["Custom SMG"] := {interval:30, pattern:[ -2, -3, -3, -4 ], mode:"vertical"}
+weapons["Pump shotgun"] := {interval:80, pattern:[ -8, -7, -9 ], mode:"vertical"}
+weapons["Double Barrel Shotgun"] := {interval:90, pattern:[ -12, -10 ], mode:"vertical"}
+weapons["Waterpipe Shotgun"] := {interval:85, pattern:[ -10, -9 ], mode:"vertical"}
+weapons["Spas-12"] := {interval:75, pattern:[ -9, -9 ], mode:"vertical"}
+weapons["Semi-Automatic Pistol"] := {interval:70, pattern:[ -6, -5 ], mode:"vertical"}
+weapons["Revolver"] := {interval:70, pattern:[ -7, -6 ], mode:"vertical"}
+weapons["Python"] := {interval:70, pattern:[ -8, -7 ], mode:"vertical"}
+weapons["M249"] := {interval:28, pattern:[ -2, -3, -4, -5, -6, -6, -5, -4, -3 ], mode:"vertical"}
 
 ; Scope modifiers
 scopemods := {}
@@ -83,14 +83,20 @@ for index, name in weapList {
 }
 
 ; Scope modifiers and profile controls
-Gui, Add, GroupBox, x10 y414 w440 h88, Extras
+Gui, Add, GroupBox, x10 y414 w440 h108, Extras
 Gui, Add, Text, x20 y434, Scope modifier
 Gui, Add, DropDownList, x140 y430 vScopeDD gOnScopeChange w150, None||8x|Holo|Hand|Silencer
-Gui, Add, Button, x310 y428 w120 h26 gToggleScopeTooltip, ?
+Gui, Add, Button, x260 y428 w40 h26 gPrevWeapon, <
+Gui, Add, Button, x310 y428 w40 h26 gNextWeapon, >
+Gui, Add, Button, x350 y428 w30 h26 gToggleScopeTooltip, ?
 Gui, Add, Button, x20 y464 w100 gSaveProfile, Save profile
 Gui, Add, Button, x130 y464 w100 gLoadProfile, Load profile
 Gui, Add, Button, x240 y464 w100 gResetAll, Reset
 Gui, Add, Button, x350 y464 w90 gExitApp, Exit
+; ON/OFF toggle button
+Gui, Add, Button, x20 y496 w140 h28 vEnableBtn gToggleEnable, Enable (F6)
+Gui, Add, Text, x170 y496 w270 c0xBEE8C8, Quick select: press 1-9 to pick weapon
+
 
 ; Status bar
 Gui, Add, Text, x10 y512 w440 h28 vStatusText c0xA7FFB2, Status: OFF    Hotkey: F6
@@ -140,11 +146,13 @@ WeaponSelect:
 return
 
 SaveProfile:
-    FileCreateDir, profiles
+    ; create profiles directory inside script folder: macros/profiles
+    profilesDir := A_ScriptDir "\\profiles"
+    FileCreateDir, %profilesDir%
     InputBox, profname, Save profile, Enter profile name:, , 300, 150
     if (ErrorLevel)
         return
-    path := A_ScriptDir "\\profiles\\" profname ".ini"
+    path := profilesDir "\\" profname ".ini"
     IniWrite, %Sens%, %path%, general, sensitivity
     IniWrite, %FOV%, %path%, general, fov
     IniWrite, %CurrentWeapon%, %path%, general, weapon
@@ -160,7 +168,10 @@ SaveProfile:
 return
 
 LoadProfile:
-    FileSelectFile, file, 3, %A_ScriptDir%\\profiles, Select profile INI, INI Files (*.ini)
+    ; ensure profiles dir exists and open it by default
+    profilesDir := A_ScriptDir "\\profiles"
+    FileCreateDir, %profilesDir%
+    FileSelectFile, file, 3, %profilesDir%, Select profile INI, INI Files (*.ini)
     if (file = "")
         return
     IniRead, Sens, %file%, general, sensitivity, %Sens%
@@ -205,8 +216,7 @@ return
 
 ; --- Hotkeys and main loop ---
 F6::
-    Enabled := !Enabled
-    GuiControl,, StatusText, % "Status: " . (Enabled ? "ON" : "OFF") . " | Weapon: " . CurrentWeapon
+    Gosub, ToggleEnable
 return
 
 ~LButton::
@@ -214,34 +224,124 @@ return
         return
     ; Only compensate while held
     SetMouseDelay, -1
-    ; get pattern for current weapon
-    pattern := weapons[CurrentWeapon]
-    if (!pattern)
+    ; get pattern object for current weapon
+    pObj := weapons[CurrentWeapon]
+    if (!pObj)
     {
-        ; fallback
-        pattern := [40, -3, -3, -3, -4]
+        ; fallback vertical pattern
+        pObj := {interval:40, pattern:[-3,-3,-3,-4], mode:"vertical"}
     }
-    interval := pattern[1]
-    index := 2
+    interval := pObj.interval
+    idx := 1 ; index into pattern array (1-based)
     Loop
     {
         if !GetKeyState("LButton","P")
             break
-        ; compute offset
-        offset := pattern[index]
-        if (offset = "")
-        {
-            index := 2
-            offset := pattern[index]
+        ; get pattern length
+        plen := pObj.pattern.Length()
+        if (plen = 0)
+            break
+        if (pObj.mode = "pair") {
+            ; read dx,dy pairs
+            if (idx > plen)
+                idx := 1
+            dx := pObj.pattern[idx]
+            dy := pObj.pattern[idx+1]
+            ; fallback if odd
+            if (dy = "")
+                dy := 0
+            idx += 2
+        } else {
+            ; vertical-only pattern: dy values
+            if (idx > plen)
+                idx := 1
+            dx := 0
+            dy := pObj.pattern[idx]
+            idx += 1
         }
-        ; apply modifiers: sensitivity and scope
+        ; apply modifiers: sensitivity and scope (scale both axes)
         mul := ScopeMod != "" ? scopemods[ScopeMod] : 1.0
-        ymove := Round(offset * Sens * mul)
-        ; move mouse relatively
-        DllCall("mouse_event", UInt,0x0001, Int,0, Int, ymove, UInt,0, UInt,0)
+        xmove := Round(dx * Sens * mul)
+        ymove := Round(dy * Sens * mul)
+        ; move mouse relatively (dx, dy)
+        DllCall("mouse_event", UInt,0x0001, Int,xmove, Int, ymove, UInt,0, UInt,0)
         Sleep, interval
-        index += 1
     }
+return
+
+
+; Quick-select hotkeys (1..9) map to first weapons in weapList
+1::
+    SelectWeaponByIndex(1)
+return
+2::
+    SelectWeaponByIndex(2)
+return
+3::
+    SelectWeaponByIndex(3)
+return
+4::
+    SelectWeaponByIndex(4)
+return
+5::
+    SelectWeaponByIndex(5)
+return
+6::
+    SelectWeaponByIndex(6)
+return
+7::
+    SelectWeaponByIndex(7)
+return
+8::
+    SelectWeaponByIndex(8)
+return
+9::
+    SelectWeaponByIndex(9)
+return
+
+SelectWeaponByIndex(i){
+    global weapList, CurrentWeapon
+    if (i >=1 && i <= weapList.Length()) {
+        CurrentWeapon := weapList[i]
+        GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF")
+    }
+}
+
+PrevWeapon:
+    global weapList, CurrentWeapon
+    ; find current index
+    idx := 0
+    for k, v in weapList
+        if (v = CurrentWeapon)
+            idx := k
+    if (idx = 0)
+        idx := 1
+    idx -= 1
+    if (idx < 1)
+        idx := weapList.Length()
+    CurrentWeapon := weapList[idx]
+    GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF")
+return
+
+NextWeapon:
+    global weapList, CurrentWeapon
+    idx := 0
+    for k, v in weapList
+        if (v = CurrentWeapon)
+            idx := k
+    if (idx = 0)
+        idx := 1
+    idx += 1
+    if (idx > weapList.Length())
+        idx := 1
+    CurrentWeapon := weapList[idx]
+    GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF")
+return
+
+ToggleEnable:
+    Enabled := !Enabled
+    GuiControl,, EnableBtn, % (Enabled ? "Disable" : "Enable") . " (F6)"
+    GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF")
 return
 
 ; End of script
