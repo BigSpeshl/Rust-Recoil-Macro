@@ -475,7 +475,8 @@ AutoLearnFromSamples() {
     ; generate compensation pattern from the average direction
     stepPattern := []
     n := Max(4, Min(12, AutoLearnSamples.Length()))
-    for i := 1 to n {
+    loop, %n% {
+        i := A_Index
         stepPattern.Push( Round( -avgX / n * (i/2 + 1) ) )
     }
     ; adjust weapon profile object in-place
