@@ -20,6 +20,9 @@ global AutoLearnSamples := []
 global LearnWindow := 18
 global SelectedWeaponBtn := ""
 global HoverWeaponBtn := ""
+global lastMouseStateReady := false
+global lastMouseX := 0
+global lastMouseY := 0
 
 ; Структура паттерна: каждый weapon — объект {interval:, pattern: [], mode: "pair"|"vertical"}
 weapons := {}
@@ -267,15 +270,15 @@ return
         return
     ; learn mode: record recoil drift while firing
     if (LearnMode) {
-        static lastMouseX := 0, lastMouseY := 0
         ; Use raw OS cursor position instead of game cursor visibility.
         VarSetCapacity(pt, 8, 0)
         DllCall("GetCursorPos", "Ptr", &pt)
         mx := NumGet(pt, 0, "Int")
         my := NumGet(pt, 4, "Int")
-        if (lastMouseX = 0 && lastMouseY = 0) {
+        if (!lastMouseStateReady) {
             lastMouseX := mx
             lastMouseY := my
+            lastMouseStateReady := true
             return
         }
         dx := mx - lastMouseX
@@ -448,6 +451,7 @@ ToggleLearnMode:
     GuiControl,, LearnBtn, % (LearnMode ? "Stop Learn" : "Learn")
     if (LearnMode) {
         AutoLearnSamples := []
+        lastMouseStateReady := false
         GuiControl,, StatusText, % "Selected: " . CurrentWeapon . " | Status: " . (Enabled ? "ON" : "OFF") . " | LEARN"
     } else {
         AutoLearnFromSamples()
