@@ -56,55 +56,55 @@ Gui, Add, Text, x10 y8 w440 h28 c0xFFFFFF Center, Recoil macros — Controls
 Gui, Font, s10, Segoe UI
 
 ; Sensitivity block
-Gui, Add, GroupBox, x10 y44 w440 h72, Aim settings
+Gui, Add, GroupBox, x10 y44 w760 h110, Aim settings
 Gui, Add, Text, x20 y64, Sensitivity
-Gui, Add, Slider, x120 y66 vSensSlider Range20-200 w240 gOnSensChange,100
-Gui, Add, Text, x370 y64 vSensText c0xCFE8FF w60, 1.00
-Gui, Add, Text, x20 y92, FOV
-Gui, Add, Edit, x120 y90 vFOVEdit w80 gOnFOVChange, %FOV%
-Gui, Add, Text, x210 y92 w220 c0x9FB8C8, (Field of view — affects aim scaling)
+Gui, Add, Slider, x160 y66 vSensSlider Range20-200 w420 gOnSensChange,100
+Gui, Add, Text, x600 y64 vSensText c0xCFE8FF w80, 1.00
+Gui, Add, Text, x20 y96, FOV
+Gui, Add, Edit, x160 y94 vFOVEdit w100 gOnFOVChange, %FOV%
+Gui, Add, Text, x280 y96 w480 c0x9FB8C8, (Field of view — affects aim scaling)
 
 ; Weapons block
-Gui, Add, GroupBox, x10 y124 w440 h280, Weapons
-; create two-column grid of buttons with improved spacing and color hint
+Gui, Add, GroupBox, x10 y164 w760 h440, Weapons
+; create three-column grid of buttons with improved spacing and color hint
 weapList := ["AK","LR-300","Assault Rifle","M39","L96","Bolt Action Rifle","Semi-Automatic Rifle","MP5A4","Thompson","Custom SMG","Pump shotgun","Double Barrel Shotgun","Waterpipe Shotgun","Spas-12","Semi-Automatic Pistol","Revolver","Python","M249"]
 row := 0
 col := 0
 for index, name in weapList {
-    xPos := 20 + (col * 210)
-    yPos := 154 + (row * 34)
+    xPos := 20 + (col * 250)
+    yPos := 194 + (row * 36)
     ; styled button: use larger size and bold label for readability
-    Gui, Add, Button, x%xPos% y%yPos% w200 h28 gWeaponSelect vBtn%index% +Center, %name%
+    Gui, Add, Button, x%xPos% y%yPos% w230 h32 gWeaponSelect vBtn%index% +Center, %name%
     col += 1
-    if (col >= 2) {
+    if (col >= 3) {
         col := 0
         row += 1
     }
 }
 
 ; Scope modifiers and profile controls
-Gui, Add, GroupBox, x10 y414 w440 h108, Extras
-Gui, Add, Text, x20 y434, Scope modifier
-Gui, Add, DropDownList, x140 y430 vScopeDD gOnScopeChange w150, None||8x|Holo|Hand|Silencer
-Gui, Add, Button, x260 y428 w40 h26 gPrevWeapon, <
-Gui, Add, Button, x310 y428 w40 h26 gNextWeapon, >
-Gui, Add, Button, x350 y428 w30 h26 gToggleScopeTooltip, ?
-Gui, Add, Button, x20 y464 w100 gSaveProfile, Save profile
-Gui, Add, Button, x130 y464 w100 gLoadProfile, Load profile
-Gui, Add, Button, x240 y464 w100 gResetAll, Reset
-Gui, Add, Button, x350 y464 w90 gExitApp, Exit
+Gui, Add, GroupBox, x10 y620 w760 h120, Extras
+Gui, Add, Text, x20 y640, Scope modifier
+Gui, Add, DropDownList, x160 y636 vScopeDD gOnScopeChange w150, None||8x|Holo|Hand|Silencer
+Gui, Add, Button, x340 y636 w40 h26 gPrevWeapon, <
+Gui, Add, Button, x390 y636 w40 h26 gNextWeapon, >
+Gui, Add, Button, x440 y636 w30 h26 gToggleScopeTooltip, ?
+Gui, Add, Button, x500 y636 w110 gSaveProfile, Save profile
+Gui, Add, Button, x620 y636 w110 gLoadProfile, Load profile
+Gui, Add, Button, x20 y676 w120 gResetAll, Reset
+Gui, Add, Button, x160 y676 w120 gExitApp, Exit
 ; ON/OFF toggle button
-Gui, Add, Button, x20 y496 w140 h28 vEnableBtn gToggleEnable, Enable (F6)
-Gui, Add, Text, x170 y496 w270 c0xBEE8C8, Quick select: press 1-9 to pick weapon
+Gui, Add, Button, x300 y676 w160 h36 vEnableBtn gToggleEnable, Enable (F6)
+Gui, Add, Text, x480 y676 w260 c0xBEE8C8, Quick select: press 1-9 to pick weapon
 
 
 ; Status bar
-Gui, Add, Text, x10 y512 w440 h28 vStatusText c0xA7FFB2, Status: OFF    Hotkey: F6
+Gui, Add, Text, x10 y760 w740 h28 vStatusText c0xA7FFB2, Selected: | Status: OFF    Hotkey: F6
 
 ; Tooltips and initial control values
-ToolTip, Hotkey F6 toggles macro. Hold LMB to apply recoil compensation., 5, 580
+ToolTip, Hotkey F6 toggles macro. Hold LMB to apply recoil compensation., 10, 780
 
-Gui, Show, w460 h560, Recoil macros — GUI
+Gui, Show, w780 h760, Recoil macros — GUI
 return
 
 ; --- GUI callbacks ---
@@ -157,11 +157,19 @@ SaveProfile:
     IniWrite, %FOV%, %path%, general, fov
     IniWrite, %CurrentWeapon%, %path%, general, weapon
     IniWrite, %ScopeMod%, %path%, general, scope
-    ; Save each weapon pattern as a comma-separated line
+    ; Save each weapon as interval|mode|csv_pattern
     for k, v in weapons {
-        s := ""
-        for i, val in v
-            s .= val ","
+        s := v.interval "," v.mode ","
+        ; join pattern array
+        if IsObject(v.pattern) {
+            first := true
+            for idx, val in v.pattern {
+                if (!first)
+                    s .= ","
+                s .= val
+                first := false
+            }
+        }
         IniWrite, %s%, %path%, weapon_pat, %k%
     }
     MsgBox, Profile saved: %path%
@@ -182,18 +190,26 @@ LoadProfile:
     GuiControl,, SensText, % Round(Sens, 2)
     GuiControl,, FOVEdit, %FOV%
     GuiControl,, ScopeDD, %ScopeMod%
-    ; Load weapon patterns if present (basic parser)
-    Loop, Read, %file%
-    {
-        line := A_LoopReadLine
-        if InStr(line, "=") {
-            StringSplit, parts, line, =
-            key := parts1
-            val := parts2
-            if InStr(key, "weapon_pat") {
-                ; key format: weapon_pat[weaponName]
-                ; skip sophisticated parsing for now
+    ; Load weapon patterns if present (each key in [weapon_pat] section)
+    for k, wname in weapList {
+        IniRead, pstr, %file%, weapon_pat, %wname%,
+        if (pstr != "") {
+            ; format: interval,mode,comma-separated values
+            pat := []
+            interval := 0
+            mode := "vertical"
+            idx := 0
+            Loop, Parse, pstr, `,
+            {
+                idx += 1
+                if (idx = 1)
+                    interval := A_LoopField + 0
+                else if (idx = 2)
+                    mode := A_LoopField
+                else
+                    pat.Push(A_LoopField + 0)
             }
+            weapons[wname] := {interval: interval, pattern: pat, mode: mode}
         }
     }
     GuiControl,, StatusText, % "Loaded: " . file
@@ -261,8 +277,9 @@ return
         }
         ; apply modifiers: sensitivity and scope (scale both axes)
         mul := ScopeMod != "" ? scopemods[ScopeMod] : 1.0
-        xmove := Round(dx * Sens * mul)
-        ymove := Round(dy * Sens * mul)
+        ; invert sign to COUNTER recoil: patterns describe recoil direction, so negate to move opposite
+        xmove := Round(-dx * Sens * mul)
+        ymove := Round(-dy * Sens * mul)
         ; move mouse relatively (dx, dy)
         DllCall("mouse_event", UInt,0x0001, Int,xmove, Int, ymove, UInt,0, UInt,0)
         Sleep, interval
