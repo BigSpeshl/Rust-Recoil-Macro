@@ -118,6 +118,14 @@ OnScopeChange:
     ScopeMod := ScopeDD
 return
 
+ToggleScopeTooltip:
+    ; Показывает подсказку по смыслу модификаторов прицела
+    MsgBox, 64, Scope modifiers, 8x: stronger zoom (reduces compensation)
+    MsgBox, 64, Scope modifiers, Holo: slight reduction
+    MsgBox, 64, Scope modifiers, Hand: slight reduction for hip/hand aim
+    MsgBox, 64, Scope modifiers, Silencer: slight reduction when silenced
+return
+
 WeaponSelect:
     Gui, Submit, NoHide
     ; Identify which button triggered
