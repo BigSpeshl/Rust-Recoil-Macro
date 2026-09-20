@@ -139,7 +139,8 @@ UpdateWeaponButtonStyles() {
 OnSensChange:
     GuiControlGet, SensSlider
     Sens := SensSlider / 100.0
-    GuiControl,, SensText, % Round(Sens, 2)
+    SensLabel := Round(Sens, 2)
+    GuiControl,, SensText, %SensLabel%
 return
 OnFOVChange:
     GuiControlGet, FOVEdit
@@ -209,8 +210,10 @@ LoadProfile:
     IniRead, FOV, %file%, general, fov, %FOV%
     IniRead, CurrentWeapon, %file%, general, weapon, %CurrentWeapon%
     IniRead, ScopeMod, %file%, general, scope, %ScopeMod%
-    GuiControl,, SensSlider, % Round(Sens*100)
-    GuiControl,, SensText, % Round(Sens, 2)
+    SensSliderValue := Round(Sens*100)
+    SensLabel := Round(Sens, 2)
+    GuiControl,, SensSlider, %SensSliderValue%
+    GuiControl,, SensText, %SensLabel%
     GuiControl,, FOVEdit, %FOV%
     GuiControl,, ScopeDD, %ScopeMod%
     ; Load weapon patterns if present (each key in [weapon_pat] section)
